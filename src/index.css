@@ -1,0 +1,19 @@
+body {
+  margin: 0;
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  color: #213547;
+}
+
+.host-nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.host-nav a {
+  color: #9fa6ff;
+  text-decoration: none;
+}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- micro-lc resolves application routes ("./home/") against the document
+         base URI. Without a base tag a deep link such as /example-remote/ would make
+         "./home/" mean /example-remote/home/. Change it if the host is not served
+         from the root of its domain. -->
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>micro-lc + React host</title>
+  </head>
+  <body>
+    <header id="nav"></header>
+    <main id="microlc"></main>
+    <!-- Defines <micro-lc>. Copied from node_modules by vite.config.ts. -->
+    <script type="module" src="/micro-lc/micro-lc.production.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
