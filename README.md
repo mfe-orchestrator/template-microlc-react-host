@@ -173,6 +173,13 @@ The version is the one in `package.json`.
 `@micro-lc/interfaces` maps its `./v2` types to a file it does not ship, so `tsconfig.json` aliases
 `@micro-lc/interfaces/v2` to the real declaration file.
 
+## Why Vite
+
+The shell itself is an ordinary single page app: micro-lc is a custom element and loads parcels at
+runtime, so the host's bundler only has to build the React navigation and the SDK wiring. Vite is
+the toolchain of the other orchestrator templates; micro-lc's runtime is copied as-is instead of
+bundled (see above), so no webpack-specific behaviour is involved.
+
 ## Environment variables
 
 Copy `.env.example` to `.env` and fill it in. Vite injects them at build time.
