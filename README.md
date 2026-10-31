@@ -28,6 +28,7 @@ pnpm preview    # serves dist/ on http://localhost:4173
 ├── index.html              # <base href="/">, loads micro-lc, then src/main.tsx
 ├── src/
 │   ├── main.tsx            # configure(), then builds the config and starts <micro-lc>
+│   ├── telemetry.ts        # Application Insights, when the environment asks for it
 │   ├── microlc-config.ts   # the micro-lc config, built at runtime with remoteUrl()
 │   ├── shared-react.ts     # publishes the host's React on window for the parcels
 │   ├── Nav.tsx             # React navigation bar
@@ -179,6 +180,64 @@ The shell itself is an ordinary single page app: micro-lc is a custom element an
 runtime, so the host's bundler only has to build the React navigation and the SDK wiring. Vite is
 the toolchain of the other orchestrator templates; micro-lc's runtime is copied as-is instead of
 bundled (see above), so no webpack-specific behaviour is involved.
+
+## Application Insights
+
+The host starts [Application Insights](https://learn.microsoft.com/azure/azure-monitor/app/javascript-sdk)
+when its environment has a **global variable** named `APPLICATIONINSIGHTS_CONNECTION_STRING`. Set it
+in the console, on each environment you want monitored, to the connection string of that
+environment's Application Insights resource. The connection string only allows ingestion, so it is
+fine in a browser.
+
+Without the variable nothing happens: `src/telemetry.ts` loads `@microsoft/applicationinsights-web`
+with a dynamic `import()`, so the SDK is a chunk of its own that is never downloaded, and the page
+behaves exactly as before.
+
+With it, the host initialises the SDK once and tracks:
+
+- page views, the first one and every route change (`enableAutoRouteTracking`);
+- unhandled exceptions, of the host and of every remote;
+- `fetch` and XHR calls as dependencies, with W3C (`traceparent`, `tracestate`) and classic
+  (`Request-Id`, `Request-Context`) correlation headers, so a backend that reports to Application
+  Insights joins the same end-to-end transaction;
+- browser timings (page load, network, DOM processing).
+
+Everything is reported under the cloud role name `ROLE_NAME` (`microlc-host-react`): rename it in
+`src/telemetry.ts` after your host, so it is told apart from the backends in the application map.
+
+**Correlation with backends.** Correlation headers go to same-origin calls only, by default. To
+correlate the calls to a backend on another host, add that host to `CORRELATED_HOSTS` in
+`src/telemetry.ts` (`'api.example.com'`, or `'*.example.com'`), and make sure the backend's CORS
+allows the request headers `traceparent`, `tracestate`, `Request-Id` and `Request-Context`:
+otherwise the browser preflight fails and the call with it.
+
+**Remotes.** The instance is published on `window.appInsights` once loaded, and remotes use that one
+instead of bundling their own SDK. Exceptions, calls and page views of a remote are already
+tracked; for custom telemetry:
+
+```ts
+window.appInsights?.trackEvent({ name: 'checkout-completed' }, { items: 3 })
+window.appInsights?.trackException({ exception: error })
+```
+
+Parcels run inside qiankun's sandbox, but a read the sandbox misses falls through to the real
+`window` — the way parcels already reach the host's React (see [Sharing React](#sharing-react)) — so
+`window.appInsights` is the host's instance for them too.
+
+The optional chaining matters: `window.appInsights` is not there when the environment has no
+connection string, nor before the SDK has finished loading, and a call made then is simply skipped.
+In a TypeScript remote, declare the slice it uses, so it needs no dependency on the SDK:
+
+```ts
+declare global {
+  interface Window {
+    appInsights?: {
+      trackEvent(event: { name: string }, properties?: Record<string, unknown>): void
+      trackException(exception: { exception: Error }, properties?: Record<string, unknown>): void
+    }
+  }
+}
+```
 
 ## Environment variables
 

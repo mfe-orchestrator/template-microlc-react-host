@@ -12,6 +12,9 @@ these are the rules that keep it working.
 ## Invariants
 
 - `configure()` stays the first statement of `src/main.tsx`, before anything calls `remoteUrl()`.
+- `window.appInsights` is a contract with the parcels: `src/telemetry.ts` sets it only when the
+  environment's global variables carry `APPLICATIONINSIGHTS_CONNECTION_STRING`. Keep the SDK behind
+  its dynamic `import()`: a static import puts it in every bundle, used or not.
 - Remote entries come only from `remoteUrl('<slug>')` in `src/microlc-config.ts`. Never write a
   remote URL in code or config; never parse or rebuild the URL it returns.
 - Parcels are declared as `entry: { scripts: [url] }`: the remote's entry is one self-contained UMD
